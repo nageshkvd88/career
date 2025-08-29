@@ -53,3 +53,13 @@ body {
 .form-control:valid, .form-control.is-valid, .form-select:valid, .form-select.is-valid{
   background-size: .813rem .813rem !important;
 }
+
+.career__card--successWrap{
+  padding:3rem 2rem;
+  text-align: center;
+}
+.success_msg{
+  font-size: 1.75rem;
+  color:green;
+  line-height: 1.5;
+}
