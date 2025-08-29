@@ -37,7 +37,7 @@ const Career = () => {
     selcollege: "",
     selectpost: "",
     selDep: "",
-
+   //personal
     fullname: "",
     email: "",
     phone: "",
@@ -48,11 +48,42 @@ const Career = () => {
     dist: "",
     pincode: "",
     state: "",
-
-    resume: null,
+    // education
+    phdstatus: "",
+    phdpassyear: "",
+    phdawdDept: "",
+    phdawdthesis: "",
+    phdawduniversity: "",
+    phdsubDept: "",
+    phdsubthesis: "", 
+    phdsubuniversity: "",
+    phdregDept: "",
+    phdregthesis: "",
+    phdreguniversity: "",
+    selectpg: "",
+    branch_pg: "",
+    branch_pg_ma: "",
+    pg_other: "",
+    specialization: "",
+    CGPA: "",
+    pgpass: "",
+    institution_pg: "",
+    university_pg:"",
+    gaterank: "",
+    selectug: "",
+    branch_ug: "",
+    ug_other: "",
+    ugspecialization: "",
+    ugCGPA: "",
+    ugpass: "",
+    institution_ug: "",
+    university_ug: "",
+    eamcet_rank: "",
+    
   });
 
   const today = new Date();
+  const currentYear = new Date().getFullYear();
   // Max date = today (no future DOB allowed)
   const maxDate = today.toISOString().split("T")[0];
 
@@ -97,7 +128,181 @@ const Career = () => {
 
     }
     if (step === 3) {
-      if (!formData.resume) newErrors.resume = "Resume upload is required";
+       if (!formData.phdstatus) newErrors.phdstatus = "Select Ph.D Status";
+
+       if (formData.phdstatus === "Awarded" && !formData.phdpassyear){
+          newErrors.phdpassyear = "Year of Award is required";
+       }
+       else if (!/^\d{4}$/.test(formData.phdpassyear)) {
+        newErrors.phdpassyear = "Year must be exactly 4 digits";
+       } 
+        else if (parseInt(formData.phdpassyear, 10) > currentYear) {
+        newErrors.phdpassyear = "Future years are not allowed";
+
+        } else if (parseInt(formData.phdpassyear, 10) < 1900) {
+        newErrors.phdpassyear = "Enter a valid year after 1900";
+        }
+
+        if (formData.phdstatus === "Awarded" && !formData.phdawdDept.trim()){
+          newErrors.phdawdDept = "Department is required";
+        }
+        else if (formData.phdawdDept.length < 4){
+           newErrors.phdawdDept = "At least 4 characters required";
+        }
+        if (formData.phdstatus === "Awarded" && !formData.phdawdthesis.trim()){
+          newErrors.phdawdthesis = "Thesis Title is required";
+        }
+        else if (formData.phdawdthesis.length < 4){
+           newErrors.phdawdthesis = "At least 4 characters required";
+        }
+        if (formData.phdstatus === "Awarded" && !formData.phdawduniversity.trim()){
+          newErrors.phdawduniversity = "University is required";
+        }
+        else if (formData.phdawduniversity.length < 2){
+           newErrors.phdawduniversity = "At least 2 characters required";
+        }
+        
+        if (formData.phdstatus === "Submitted" && !formData.phdsubDept.trim()){
+          newErrors.phdsubDept = "Department is required";
+        }
+        else if (formData.phdawdDept.length < 4){
+           newErrors.phdawdDept = "At least 4 characters required";
+        }
+        if (formData.phdstatus === "Submitted" && !formData.phdsubthesis.trim()){
+          newErrors.phdsubthesis = "Thesis Title is required";
+        }
+        else if (formData.phdsubthesis.length < 4){
+           newErrors.phdsubthesis = "At least 4 characters required";
+        }
+        if (formData.phdstatus === "Submitted" && !formData.phdsubuniversity.trim()){
+          newErrors.phdsubuniversity = "University is required";
+        }
+        else if (formData.phdsubuniversity.length < 2){
+           newErrors.phdsubuniversity = "At least 2 characters required";
+        }
+
+        if (formData.phdstatus === "registered" && !formData.phdregDept.trim()){
+          newErrors.phdregDept = "Department is required";
+        }
+        else if (formData.phdregDept.length < 4){
+           newErrors.phdregDept = "At least 4 characters required";
+        }
+        if (formData.phdstatus === "registered" && !formData.phdregthesis.trim()){
+          newErrors.phdregthesis = "Thesis Title is required";
+        }
+        else if (formData.phdregthesis.length < 4){
+           newErrors.phdregthesis = "At least 4 characters required";
+        }
+        if (formData.phdstatus === "registered" && !formData.phdreguniversity.trim()){
+          newErrors.phdreguniversity = "University is required";
+        }
+        else if (formData.phdreguniversity.length < 2){
+           newErrors.phdreguniversity = "At least 2 characters required";
+        }
+
+        if (!formData.selectpg) newErrors.selectpg = "Select PG Degree";
+        if (formData.selectpg === "M.Sc" && !formData.branch_pg) newErrors.branch_pg = "Select Branch";
+        if (formData.selectpg === "MA" && !formData.branch_pg_ma) newErrors.branch_pg_ma = "Select Branch";
+        if (formData.selectpg === "Other" && !formData.pg_other.trim()){
+          newErrors.pg_other = "Specify Other PG Degree";
+        }
+        else if (formData.pg_other.length < 4){
+           newErrors.pg_other = "At least 4 characters required";
+        }
+        if (!formData.specialization.trim()){
+          newErrors.specialization = "Specialization is required";
+        }
+        else if (formData.specialization.length < 4){
+           newErrors.specialization = "At least 4 characters required";
+        }
+        if (!formData.CGPA.trim()){
+          newErrors.CGPA = "CGPA / Percentage is required";
+        }
+        else if (isNaN(formData.CGPA) || formData.CGPA < 0 || formData.CGPA > 100){
+           newErrors.CGPA = "Enter a valid number between 0 and 100";
+        }
+        if (!formData.pgpass){
+          newErrors.pgpass = "Year of Passing is required";
+        }
+        else if (!/^\d{4}$/.test(formData.pgpass)) {
+          newErrors.pgpass = "Year must be exactly 4 digits";
+        }
+        else if (parseInt(formData.pgpass, 10) > currentYear) {
+        newErrors.pgpass = "Future years are not allowed";
+
+        } else if (parseInt(formData.pgpass, 10) < 1940) {
+        newErrors.pgpass = "Enter a valid year after 1940";
+        }
+        
+        if (!formData.institution_pg.trim()){
+          newErrors.institution_pg = "Institution is required";
+        }
+        else if (formData.institution_pg.length < 4){
+           newErrors.institution_pg = "At least 4 characters required";
+        }
+        if (!formData.university_pg.trim()){
+          newErrors.university_pg = "University is required";
+        }
+        else if (formData.university_pg.length < 4){
+           newErrors.university_pg = "At least 4 characters required";
+        }
+        if (!formData.gaterank.trim()){
+          newErrors.gaterank = "GATE Rank / GPAT Rank is required";
+        }
+        else if (isNaN(formData.gaterank) || formData.gaterank <= 0){
+           newErrors.gaterank = "Enter a valid positive number";
+        }
+        if (!formData.selectug) newErrors.selectug = "Select UG Degree";
+        if (formData.selectug === "Other" && !formData.ug_other.trim()){
+          newErrors.ug_other = "Specify Other UG Degree";
+        }
+        else if (formData.ug_other.length < 4){
+           newErrors.ug_other = "At least 4 characters required";
+        }
+        if(!formData.ugspecialization.trim()){
+          newErrors.ugspecialization = "Specialization is required";
+        }
+        else if (formData.ugspecialization.length < 4){
+           newErrors.ugspecialization = "At least 4 characters required";
+        }
+        if (!formData.ugCGPA.trim()){
+          newErrors.ugCGPA = "CGPA / Percentage is required";
+        }
+        else if (isNaN(formData.ugCGPA) || formData.ugCGPA < 0 || formData.ugCGPA > 100){
+           newErrors.ugCGPA = "Enter a valid number between 0 and 100";
+        }
+        if (!formData.ugpass){
+          newErrors.ugpass = "Year of Passing is required";
+        }
+        else if (!/^\d{4}$/.test(formData.ugpass)) {
+          newErrors.ugpass = "Year must be exactly 4 digits";
+        }
+         else if (parseInt(formData.ugpass, 10) > currentYear) {
+        newErrors.ugpass = "Future years are not allowed";
+
+        } else if (parseInt(formData.ugpass, 10) < 1940) {
+        newErrors.ugpass = "Enter a valid year after 1940";
+        }
+        
+        if (!formData.institution_ug.trim()){
+          newErrors.institution_ug = "Institution is required";
+        }
+        else if (formData.institution_ug.length < 4){
+           newErrors.institution_ug = "At least 4 characters required";
+        }
+        if(!formData.university_ug.trim()){
+          newErrors.university_ug = "University is required";
+        }
+        else if (formData.university_ug.length < 2){
+           newErrors.university_ug = "At least 2 characters required";
+        }
+        if(!formData.eamcet_rank.trim()){
+          newErrors.eamcet_rank = "EAMCET / ECET Rank is required";
+        }
+        else if (isNaN(formData.eamcet_rank) || formData.eamcet_rank <= 0){
+           newErrors.eamcet_rank = "Enter a valid positive number";
+        }
+
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -334,7 +539,7 @@ const Career = () => {
                         <>
                           <Form.Group as={Col} sm="12" className="mb-3">
                             <Form.Label>Year of Award(Ph.D)</Form.Label>
-                            <Form.Control required type="text" placeholder="Year of Passing ..." name="phdpassyear" isInvalid={!!errors.phdpassyear} value={formData.phdpassyear} onChange={handleChange} isValid={formData.phdpassyear && !errors.phdpassyear} />
+                            <Form.Control required type="number" placeholder="Year of Passing ..." name="phdpassyear" isInvalid={!!errors.phdpassyear} value={formData.phdpassyear} onChange={handleChange} isValid={formData.phdpassyear && !errors.phdpassyear} />
                             {errors.phdpassyear && <p className="text-danger mb-0">{errors.phdpassyear}</p>}
                           </Form.Group>
 
@@ -419,7 +624,7 @@ const Career = () => {
                         <>
                           <Form.Group as={Col} sm="12" className="mb-3" >
                             <Form.Label>Select Branch</Form.Label>
-                            <Form.Select name="branch_pg" value={formData.branch_pg} onChange={handleChange} isInvalid={!!errors.branch_pg} isValid={formData.branch_pg && !errors.branch_pg}>
+                            <Form.Select name="branch_pg" value={formData.branch_pg || " "} onChange={handleChange} isInvalid={!!errors.branch_pg} isValid={formData.branch_pg && !errors.branch_pg}>
                               <option value="">Select Branch</option>
                               <option value="Mathematics">Mathematics</option>
                               <option value="Physics">Physics</option>
@@ -462,32 +667,32 @@ const Career = () => {
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Percentage / CGPA </Form.Label>
-                        <Form.Control required type="text" placeholder="Percentage / CGPA ..." name="CGPA" isInvalid={!!errors.CGPA} value={formData.CGPA} onChange={handleChange} isValid={formData.CGPA && !errors.CGPA} />
+                        <Form.Control required type="number" placeholder="Percentage / CGPA ..." name="CGPA" isInvalid={!!errors.CGPA} value={formData.CGPA} onChange={handleChange} isValid={formData.CGPA && !errors.CGPA} />
                         {errors.CGPA && <p className="text-danger mb-0">{errors.CGPA}</p>}
                       </Form.Group>
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Year of Passing</Form.Label>
-                        <Form.Control required type="text" placeholder="Year of Passing ..." name="pgpass" isInvalid={!!errors.pgpass} value={formData.pgpass} onChange={handleChange} isValid={formData.pgpass && !errors.pgpass} />
+                        <Form.Control required type="number" placeholder="Year of Passing ..." name="pgpass" isInvalid={!!errors.pgpass} value={formData.pgpass} onChange={handleChange} isValid={formData.pgpass && !errors.pgpass} />
                         {errors.pgpass && <p className="text-danger mb-0">{errors.pgpass}</p>}
                       </Form.Group>
 
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Institution</Form.Label>
-                        <Form.Control required type="text" placeholder="Institution ..." name="institution" isInvalid={!!errors.institution} value={formData.institution} onChange={handleChange} isValid={formData.institution && !errors.institution} />
-                        {errors.institution && <p className="text-danger mb-0">{errors.institution}</p>}
+                        <Form.Control required type="text" placeholder="Institution ..." name="institution_pg" isInvalid={!!errors.institution_pg} value={formData.institution_pg} onChange={handleChange} isValid={formData.institution_pg && !errors.institution_pg} />
+                        {errors.institution_pg && <p className="text-danger mb-0">{errors.institution_pg}</p>}
                       </Form.Group>
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>University</Form.Label>
-                        <Form.Control required type="text" placeholder="University..." name="pguniversity" isInvalid={!!errors.institution} value={formData.institution} onChange={handleChange} isValid={formData.institution && !errors.institution} />
-                        {errors.institution && <p className="text-danger mb-0">{errors.institution}</p>}
+                        <Form.Control required type="text" placeholder="University..." name="university_pg" isInvalid={!!errors.university_pg} value={formData.university_pg} onChange={handleChange} isValid={formData.university_pg && !errors.university_pg} />
+                        {errors.university_pg && <p className="text-danger mb-0">{errors.university_pg}</p>}
                       </Form.Group>
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>GATE Rank / GPAT Rank</Form.Label>
-                        <Form.Control required type="text" placeholder="GATE Rank / GPAT Rank..." name="gaterank" isInvalid={!!errors.gaterank} value={formData.gaterank} onChange={handleChange} isValid={formData.gaterank && !errors.gaterank} />
+                        <Form.Control required type="number" placeholder="GATE Rank / GPAT Rank..." name="gaterank" isInvalid={!!errors.gaterank} value={formData.gaterank} onChange={handleChange} isValid={formData.gaterank && !errors.gaterank} />
                         {errors.gaterank && <p className="text-danger mb-0">{errors.gaterank}</p>}
                       </Form.Group>
 
@@ -524,32 +729,32 @@ const Career = () => {
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Percentage / CGPA </Form.Label>
-                        <Form.Control required type="text" placeholder="Percentage / CGPA ..." name="ugCGPA" isInvalid={!!errors.ugCGPA} value={formData.ugCGPA} onChange={handleChange} isValid={formData.ugCGPA && !errors.ugCGPA} />
+                        <Form.Control required type="number" placeholder="Percentage / CGPA ..." name="ugCGPA" isInvalid={!!errors.ugCGPA} value={formData.ugCGPA} onChange={handleChange} isValid={formData.ugCGPA && !errors.ugCGPA} />
                         {errors.ugCGPA && <p className="text-danger mb-0">{errors.ugCGPA}</p>}
                       </Form.Group>
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Year of Passing</Form.Label>
-                        <Form.Control required type="text" placeholder="Year of Passing ..." name="ugpass" isInvalid={!!errors.ugpass} value={formData.ugpass} onChange={handleChange} isValid={formData.ugpass && !errors.ugpass} />
+                        <Form.Control required type="number" placeholder="Year of Passing ..." name="ugpass" isInvalid={!!errors.ugpass} value={formData.ugpass} onChange={handleChange} isValid={formData.ugpass && !errors.ugpass} />
                         {errors.ugpass && <p className="text-danger mb-0">{errors.ugpass}</p>}
                       </Form.Group>
 
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Institution</Form.Label>
-                        <Form.Control required type="text" placeholder="Institution ..." name="uginstitution" isInvalid={!!errors.uginstitution} value={formData.uginstitution} onChange={handleChange} isValid={formData.uginstitution && !errors.uginstitution} />
-                        {errors.uginstitution && <p className="text-danger mb-0">{errors.uginstitution}</p>}
+                        <Form.Control required type="text" placeholder="Institution ..." name="institution_ug" isInvalid={!!errors.institution_ug} value={formData.institution_ug} onChange={handleChange} isValid={formData.institution_ug && !errors.institution_ug} />
+                        {errors.institution_ug && <p className="text-danger mb-0">{errors.institution_ug}</p>}
                       </Form.Group>
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>University</Form.Label>
-                        <Form.Control required type="text" placeholder="University..." name="uguniversity" isInvalid={!!errors.uguniversity} value={formData.uguniversity} onChange={handleChange} isValid={formData.uguniversity && !errors.uguniversity} />
-                        {errors.uguniversity && <p className="text-danger mb-0">{errors.uguniversity}</p>}
+                        <Form.Control required type="text" placeholder="University..." name="university_ug" isInvalid={!!errors.university_ug} value={formData.university_ug} onChange={handleChange} isValid={formData.university_ug && !errors.university_ug} />
+                        {errors.university_ug && <p className="text-danger mb-0">{errors.university_ug}</p>}
                       </Form.Group>
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>EAMCET / ECET Rank</Form.Label>
-                        <Form.Control required type="text" placeholder="GATE Rank / GPAT Rank..." name="eamcet_rank" isInvalid={!!errors.eamcet_rank} value={formData.eamcet_rank} onChange={handleChange} isValid={formData.eamcet_rank && !errors.eamcet_rank} />
+                        <Form.Control required type="number" placeholder="GATE Rank / GPAT Rank..." name="eamcet_rank" isInvalid={!!errors.eamcet_rank} value={formData.eamcet_rank} onChange={handleChange} isValid={formData.eamcet_rank && !errors.eamcet_rank} />
                         {errors.eamcet_rank && <p className="text-danger mb-0">{errors.eamcet_rank}</p>}
                       </Form.Group>
 
