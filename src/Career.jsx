@@ -1,13 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faKey, faUserTie, faGraduationCap, faNewspaper} from '@fortawesome/free-solid-svg-icons';
+import { faKey, faUserTie, faGraduationCap, faNewspaper, faArrowLeft} from '@fortawesome/free-solid-svg-icons';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
+import axios from 'axios';
+import { isEmpty, isLettersOnly, isValidNumber, isValiddotshyphens, isPositiveNumber, isMaxDigits } from "./validators";
+// const backendUrl = "https://adityauniversity.in:4001/api/add-careers";
+const backendUrl = process.env.REACT_APP_BACKEND_URL;
 
 const Career = () => {
+
   const [step, setStep] = useState(1);
  const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
@@ -21,6 +26,8 @@ const Career = () => {
     Pharmacy: ["Pharmaceutical Chemistry", "Pharmacognosy"]
   };
 
+   
+
   const handleCollegeChange = (e) => {
     const value = e.target.value;
     setSelectedCollege(value);
@@ -29,8 +36,8 @@ const Career = () => {
   const today = new Date();
   const RandomId = () => {
   const pad = (num) => String(num).padStart(2, "0");
-  const year = String(today.getFullYear()).slice(-2); // last 2 digits
-  const month = pad(today.getMonth() + 1);            // months are 0-based
+  const year = String(today.getFullYear()).slice(-2); 
+  const month = pad(today.getMonth() + 1);            
   const day = pad(today.getDate());
   const hour = pad(today.getHours());
   const minute = pad(today.getMinutes());
@@ -105,8 +112,10 @@ const id = RandomId();
     patents:"",
     scopus_journals:"",
     sci_journals:"",
-    upload_file:""
+    attachment:""
   });
+
+  const refid = formData.Applicationid;
 
 
   //Dob Validation
@@ -116,9 +125,15 @@ const id = RandomId();
   minDate.setFullYear(today.getFullYear() - 60);
   const minDateString = minDate.toISOString().split("T")[0];
   //Total Experience
-    const industrialExp = parseInt(formData.industrial_exp, 10) || 0;
-    const academicExp = parseInt(formData.academic_exp, 10) || 0;
-    const totalExp = industrialExp + academicExp;
+    useEffect(() => {
+  const industrialExp = parseInt(formData.industrial_exp, 10) || 0;
+  const academicExp = parseInt(formData.academic_exp, 10) || 0;
+  const totalExp = industrialExp + academicExp;
+      setFormData(prev => ({
+        ...prev,
+        total_exp: totalExp.toString()
+      }));
+    }, [formData.industrial_exp, formData.academic_exp]);
 
   // handle input change
   const handleChange = (e) => {
@@ -132,7 +147,7 @@ const id = RandomId();
 
   // validation
   const validateStep = () => {
-    const isEmpty = (val) => !val || !val.trim();
+   
     let newErrors = {};
     if (step === 1) {
         if (isEmpty(formData.rectype)) newErrors.rectype = "Name is required";
@@ -219,6 +234,8 @@ const id = RandomId();
         // Department validation
         if (isEmpty(formData.phdawdDept)) {
         newErrors.phdawdDept = "Department is required";
+        } else if (!isLettersOnly(formData.phdawdDept)) {
+        newErrors.phdsubuniversity = "Only letters allowed";
         } else if (formData.phdawdDept.trim().length < 4) {
         newErrors.phdawdDept = "At least 4 characters required";
         }
@@ -302,14 +319,14 @@ const id = RandomId();
         newErrors.specialization = "Specialization is required";
       } else if (formData.specialization.trim().length < 4) {
         newErrors.specialization = "At least 4 characters required";
-      }else if (!/^[A-Za-z\s]+$/.test(formData.specialization.trim())) {
-      newErrors.specialization = "Only letters and spaces are allowed";
       }
 
       if (isEmpty(formData.CGPA)) {
         newErrors.CGPA = "CGPA / Percentage is required";
       } else if (isNaN(formData.CGPA) || formData.CGPA < 0 || formData.CGPA > 100) {
         newErrors.CGPA = "Enter a valid number between 0 and 100";
+      }else if (!isMaxDigits(formData.CGPA, 2)) {
+      newErrors.CGPA = "Maximum 2 digits allowed";
       }
 
       if (!formData.pgpass) {
@@ -348,6 +365,8 @@ const id = RandomId();
         newErrors.gaterank = "GATE Rank / GPAT Rank is required";
       } else if (isNaN(formData.gaterank) || parseInt(formData.gaterank, 10) <= 0) {
         newErrors.gaterank = "Enter a valid positive number";
+      }else if (!isMaxDigits(formData.gaterank, 5)) {
+      newErrors.gaterank = "Maximum 5 digits allowed";
       }
       
       if (isEmpty(formData.selectug)) {
@@ -364,8 +383,6 @@ const id = RandomId();
         newErrors.ugspecialization = "Specialization is required";
       } else if (formData.ugspecialization.length < 4) {
         newErrors.ugspecialization = "At least 4 characters required";
-      }else if (!/^[A-Za-z\s]+$/.test(formData.ugspecialization.trim())) {
-      newErrors.ugspecialization = "Only letters and spaces are allowed";
       }
 
       if (isEmpty(formData.ugCGPA)) {
@@ -436,21 +453,23 @@ const id = RandomId();
       newErrors.academic_exp = "Experience cannot exceed 50 years";
       }
 
-      if (totalExp <= 0) {
+      if (formData.total_exp <= 0) {
       newErrors.total_exp = "Total experience must be greater than 0";
-      } else if (totalExp > 60) {
+      } else if (formData.total_exp > 60) {
       newErrors.total_exp = "Total experience cannot exceed 60 years";
       }
       if (isEmpty(formData.current_sal)) {
       newErrors.current_sal = "Current Salary is required";
-      } else if (!/^\d{4,}$/.test(formData.current_sal)) {
-      newErrors.current_sal = "Salary must be at least 4 digits";
-      }
+      } else if (formData.current_sal?.trim().length < 4) {
+        newErrors.current_sal = "Current  Salary must be at least 4 Digits  ";
+        }
+
       if (isEmpty(formData.expected_sal)) {
       newErrors.expected_sal = "Expected  Salary is required";
-      } else if (!/^\d{4,}$/.test(formData.expected_sal)) {
-      newErrors.expected_sal = "Salary must be at least 4 digits";
-      }
+      }else if (formData.expected_sal?.trim().length < 4) {
+        newErrors.expected_sal = "Expected  Salary must be at least 4 Digits  ";
+        }
+      
     }
     if(step === 5){
       if (isEmpty(formData.njournals_count)) {
@@ -532,21 +551,29 @@ const id = RandomId();
       } else if (parseInt(formData.sci_journals, 10) < 0) {
       newErrors.sci_journals = "Negative values are not allowed";
       }
-      if (!formData.upload_file) {
-        newErrors.upload_file = "File is required";
-      } else {
-        const allowedExtensions = ["pdf", "doc", "docx"];
-        const fileName = formData.upload_file.name.toLowerCase();
-        const fileExtension = fileName.split(".").pop();
-        const fileSize = formData.upload_file.size; // in bytes
-         const maxSize = 2 * 1024 * 1024; 
 
-        if (!allowedExtensions.includes(fileExtension)) {
-          newErrors.upload_file = "Only PDF, DOC, or DOCX files are allowed";
-        } else if (fileSize > maxSize) {
-          newErrors.upload_file = "File size must be below 2MB";
-        }
+      if (!formData.attachment) {
+      newErrors.attachment = "File is required";
+      } else {
+      const allowedExtensions = ["pdf"];
+      const file = formData.attachment instanceof File ? formData.attachment : null;
+
+      if (file) {
+      const fileName = file.name.toLowerCase();
+      const fileExtension = fileName.split(".").pop();
+      const fileSize = file.size; // in bytes
+      const maxSize = 500 * 1024; // 500 KB
+
+      if (!allowedExtensions.includes(fileExtension)) {
+      newErrors.attachment = "Only PDF allowed";
+      } else if (fileSize > maxSize) {
+      newErrors.attachment = "File size must be below 500kB";
+      }        
+      } else {
+      newErrors.attachment = "Invalid file format";
       }
+      }
+
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -560,13 +587,46 @@ const id = RandomId();
 
   const prevStep = () => setStep(step - 1);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateStep()) {
-      console.log(formData);
-      setIsSubmitted(true)
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (validateStep()) {
+      console.log("Success response:", formData);
+      const { attachment, ...rest } = formData;
+      const data = new FormData();
+      data.append("formData", JSON.stringify(rest));
+    
+      if (attachment) {
+        data.append("attachment", attachment);
+      }
+
+    try {
+      const response = await axios.post(`${backendUrl}/add-careers`, data, {
+         headers: { "Content-Type": "multipart/form-data" },
+      });
+     
+      // success (200, 201, etc.)
+      if (response.status === 201 ) {
+        console.log("Success response:", response.data);
+        setIsSubmitted(true);
+      }
+    } catch (error) {
+      // error handling (400, 500, etc.)
+      if (error.response) {
+        if (error.response.status === 400) {
+          console.log("Validation error:", error.response.data);
+          alert(`Error: ${error.response.data.message || "Bad Request"}`);
+        } else {
+          console.log("Other error:", error.response.data);
+          alert(`Error ${error.response.status}: ${error.response.data.message || "Something went wrong"}`);
+        }
+      } else {
+        console.error("Error submitting form:", error);
+        alert("Network error. Please try again.");
+      }
     }
-  };
+  }
+};
 
 
 
@@ -580,7 +640,7 @@ const id = RandomId();
                 <>
               <div className='career__card--header'>
                 <Row className='align-items-center'>
-                  {step === 3 && (
+                  {step === 1 && (
                     <>
                       <Col xs={9} sm={10} lg={10}>
                       <h3>Step {step} / 5</h3>
@@ -606,7 +666,7 @@ const id = RandomId();
                       </>
                       )}
 
-                    {step === 1 && (
+                    {step === 3 && (
                        <>
                        <Col xs={9} sm={10} lg={10}>
                         <h3>Step {step} / 5</h3>
@@ -661,7 +721,7 @@ const id = RandomId();
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Applying for </Form.Label>
                         <Form.Select name="selcollege" value={formData.selcollege} onChange={handleCollegeChange} isInvalid={!!errors.selcollege} isValid={formData.selcollege && !errors.selcollege}>
-                          <option value=" ">Select</option>
+                          <option value="" disabled>Select</option>
                           {Object.keys(collegeList).map((collegeName) => (
                             <option key={collegeName} value={collegeName}>
                               School of {collegeName}
@@ -674,7 +734,7 @@ const id = RandomId();
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Post Type </Form.Label>
                         <Form.Select name="selectpost" value={formData.selectpost} onChange={handleChange} isInvalid={!!errors.selectpost} isValid={formData.selectpost && !errors.selectpost}>
-                          <option value="">Select</option>
+                          <option value="" disabled>Select</option>
                           <option value="Professor">Professor</option>
                           <option value="Associate Professor">Associate Professor</option>
                           <option value="Assistant Professor">Assistant Professor</option>
@@ -689,7 +749,7 @@ const id = RandomId();
                           disabled={!selectedCollege}
                           isInvalid={!!errors.selDep} isValid={formData.selDep && !errors.selDep}>
 
-                          <option value="">Select</option>
+                          <option value="" disabled>Select</option>
                           {selectedCollege &&
                             collegeList[selectedCollege].map((dep) => (
                               <option key={dep} value={dep}>
@@ -707,7 +767,8 @@ const id = RandomId();
                     <Row>
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Full Name</Form.Label>
-                        <Form.Control required type="text" placeholder="Full Name" name="fullname" isInvalid={!!errors.fullname} value={formData.fullname} onChange={handleChange} isValid={formData.fullname && !errors.fullname} />
+                        <Form.Control required type="text" placeholder="Full Name" name="fullname" isInvalid={!!errors.fullname} value={formData.fullname} onChange={(e) => {
+                        const value = e.target.value; if (isValiddotshyphens(value)) { setFormData({ ...formData, fullname: value }); }}} isValid={formData.fullname && !errors.fullname} />
                         {errors.fullname && <p className="text-danger mb-0">{errors.fullname}</p>}
                       </Form.Group>
 
@@ -725,7 +786,7 @@ const id = RandomId();
 
                       <Form.Group as={Col} sm="12" className="mb-3" >
                         <Form.Label>Alternate Mobile Number</Form.Label>
-                        <Form.Control type="mobile" placeholder="Last name" name="altphone" value={formData.altphone} onChange={handleChange} isInvalid={!!errors.altphone} isValid={formData.altphone && !errors.altphone} maxLength={10} />
+                        <Form.Control type="mobile" placeholder="Alternate Mobile Number" name="altphone" value={formData.altphone} onChange={handleChange} isInvalid={!!errors.altphone} isValid={formData.altphone && !errors.altphone} maxLength={10} />
                         {errors.altphone && <p className="text-danger mb-0">{errors.altphone}</p>}
                       </Form.Group>
 
@@ -755,7 +816,7 @@ const id = RandomId();
 
                       <Form.Group as={Col} sm="12" className="mb-3">
                         <Form.Label>Pincode  </Form.Label>
-                        <Form.Control required type="number" placeholder="Pincode..." name="pincode" isInvalid={!!errors.pincode} value={formData.pincode} onChange={handleChange} isValid={formData.pincode && !errors.pincode} />
+                        <Form.Control required type="number" placeholder="Pincode..." name="pincode" isInvalid={!!errors.pincode} value={formData.pincode} onChange={(e) => { const value = e.target.value; if (isValidNumber(value, 6)) { setFormData({ ...formData, pincode: value }); } }}  isValid={formData.pincode && !errors.pincode} />
                         {errors.pincode && <p className="text-danger mb-0">{errors.pincode}</p>}
                       </Form.Group>
 
@@ -768,275 +829,299 @@ const id = RandomId();
                     </Row>
                   )}
 
-                  {step === 3 && (
-                    <Row>
-                      <Form.Group as={Col} sm="12" className="mb-3" >
-                        <Form.Label>Ph.D Status?</Form.Label>
-                        <Form.Select name="phdstatus" value={formData.phdstatus} onChange={handleChange} isInvalid={!!errors.phdstatus} isValid={formData.phdstatus && !errors.phdstatus}>
-                          <option>select </option>
-                          <option value="Awarded" >Awarded</option>
-                          <option value="Submitted" >Submitted</option>
-                          <option value="registered">Registered</option>
-                          <option value="not_registered">Not Registered</option>
-                        </Form.Select>
-                        {errors.phdstatus && <p className="text-danger mb-0">{errors.phdstatus}</p>}
-                      </Form.Group>
-                      {formData.phdstatus === "Awarded" && (
-                        <>
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>Year of Award(Ph.D)</Form.Label>
-                            <Form.Control required type="number" placeholder="Year of Passing ..." name="phdpassyear" isInvalid={!!errors.phdpassyear} value={formData.phdpassyear} onChange={handleChange} isValid={formData.phdpassyear && !errors.phdpassyear} />
-                            {errors.phdpassyear && <p className="text-danger mb-0">{errors.phdpassyear}</p>}
-                          </Form.Group>
-
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>In Department of</Form.Label>
-                            <Form.Control required type="text" placeholder="Department of ..." name="phdawdDept" isInvalid={!!errors.phdawdDept} value={formData.phdawdDept} onChange={handleChange} isValid={formData.phdawdDept && !errors.phdawdDept} />
-                            {errors.phdawdDept && <p className="text-danger mb-0">{errors.phdawdDept}</p>}
-                          </Form.Group>
-
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>Thesis Title</Form.Label>
-                            <Form.Control required type="text" placeholder="Thesis Title..." name="phdawdthesis" isInvalid={!!errors.phdawdthesis} value={formData.phdawdthesis} onChange={handleChange} isValid={formData.phdawdthesis && !errors.phdawdthesis} />
-                            {errors.phdawdthesis && <p className="text-danger mb-0">{errors.phdawdthesis}</p>}
-                          </Form.Group>
-
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>University</Form.Label>
-                            <Form.Control required type="text" placeholder="University..." name="phdawduniversity" isInvalid={!!errors.phdawduniversity} value={formData.phdawduniversity} onChange={handleChange} isValid={formData.phdawduniversity && !errors.phdawduniversity} />
-                            {errors.phdawduniversity && <p className="text-danger mb-0">{errors.phdawduniversity}</p>}
-                          </Form.Group>
-                        </>
-                      )}
-                      {formData.phdstatus === "Submitted" && (
-                        <>
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>In Department of</Form.Label>
-                            <Form.Control required type="text" placeholder="Department of ..." name="phdsubDept" isInvalid={!!errors.phdsubDept} value={formData.phdsubDept} onChange={handleChange} isValid={formData.phdsubDept && !errors.phdsubDept} />
-                            {errors.phdsubDept && <p className="text-danger mb-0">{errors.phdsubDept}</p>}
-                          </Form.Group>
-
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>Thesis Title</Form.Label>
-                            <Form.Control required type="text" placeholder="Thesis Title..." name="phdsubthesis" isInvalid={!!errors.phdsubthesis} value={formData.phdsubthesis} onChange={handleChange} isValid={formData.phdsubthesis && !errors.phdsubthesis} />
-                            {errors.phdsubthesis && <p className="text-danger mb-0">{errors.phdsubthesis}</p>}
-                          </Form.Group>
-
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>University</Form.Label>
-                            <Form.Control required type="text" placeholder="University..." name="phdsubuniversity" isInvalid={!!errors.phdsubuniversity} value={formData.phdsubuniversity} onChange={handleChange} isValid={formData.phdsubuniversity && !errors.phdsubuniversity} />
-                            {errors.phdsubuniversity && <p className="text-danger mb-0">{errors.phdsubuniversity}</p>}
-                          </Form.Group>
-                        </>
-                      )}
-
-                      {formData.phdstatus === "registered" && (
-                        <>
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>In Department of</Form.Label>
-                            <Form.Control required type="text" placeholder="Department of ..." name="phdregDept" isInvalid={!!errors.phdregDept} value={formData.phdregDept} onChange={handleChange} isValid={formData.phdregDept && !errors.phdregDept} />
-                            {errors.phdregDept && <p className="text-danger mb-0">{errors.phdregDept}</p>}
-                          </Form.Group>
-
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>Thesis Title</Form.Label>
-                            <Form.Control required type="text" placeholder="Thesis Title..." name="phdregthesis" isInvalid={!!errors.phdregthesis} value={formData.phdregthesis} onChange={handleChange} isValid={formData.phdregthesis && !errors.phdregthesis} />
-                            {errors.phdregthesis && <p className="text-danger mb-0">{errors.phdregthesis}</p>}
-                          </Form.Group>
-
-                          <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>University</Form.Label>
-                            <Form.Control required type="text" placeholder="University..." name="phdreguniversity" isInvalid={!!errors.phdreguniversity} value={formData.phdreguniversity} onChange={handleChange} isValid={formData.phdreguniversity && !errors.phdreguniversity} />
-                            {errors.phdreguniversity && <p className="text-danger mb-0">{errors.phdreguniversity}</p>}
-                          </Form.Group>
-                        </>
-                      )}
-
-                      <Form.Group as={Col} sm="12" className="mb-3" >
-                        <Form.Label>PG Details </Form.Label>
-                        <Form.Select name="selectpg" value={formData.selectpg} onChange={handleChange} isInvalid={!!errors.selectpg} isValid={formData.selectpg && !errors.selectpg}>
-                          <option value="">Select</option>
-                          <option value="M.Tech">M.Tech</option>
-                          <option value="ME">ME</option>
-                          <option value="M.Pharma">M.Pharma</option>
-                          <option value="M.Sc">M.Sc</option>
-                          <option value="MA">MA</option>
-                          <option value="Other">Other (Specify)</option>
-                        </Form.Select>
-                        {errors.selectpg && <p className="text-danger mb-0">{errors.selectpg}</p>}
-                      </Form.Group>
-
-                      {formData.selectpg === "M.Sc" && (
-                        <>
+                      {step === 3 && (
+                        <Row>
                           <Form.Group as={Col} sm="12" className="mb-3" >
-                            <Form.Label>Select Branch</Form.Label>
-                            <Form.Select name="branch_pg" value={formData.branch_pg || " "} onChange={handleChange} isInvalid={!!errors.branch_pg} isValid={formData.branch_pg && !errors.branch_pg}>
-                              <option value="">Select Branch</option>
-                              <option value="Mathematics">Mathematics</option>
-                              <option value="Physics">Physics</option>
-                              <option value="Chemistry">Chemistry</option>
-                              <option value="Environmental Studies">Environmental Studies</option>
+                            <Form.Label>Ph.D Status?</Form.Label>
+                            <Form.Select name="phdstatus" value={formData.phdstatus} onChange={handleChange} isInvalid={!!errors.phdstatus} isValid={formData.phdstatus && !errors.phdstatus}>
+                              <option>select </option>
+                              <option value="Awarded" >Awarded</option>
+                              <option value="Submitted" >Submitted</option>
+                              <option value="registered">Registered</option>
+                              <option value="not_registered">Not Registered</option>
                             </Form.Select>
-                            {errors.branch_pg && <p className="text-danger mb-0">{errors.branch_pg}</p>}
+                            {errors.phdstatus && <p className="text-danger mb-0">{errors.phdstatus}</p>}
                           </Form.Group>
-                        </>
-                      )}
+                          {formData.phdstatus === "Awarded" && (
+                            <>
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>Year of Award(Ph.D)</Form.Label>
+                                <Form.Control required type="number" placeholder="Year of Passing ..." name="phdpassyear" isInvalid={!!errors.phdpassyear} value={formData.phdpassyear} onChange={(e) => { const value = e.target.value; if (isValidNumber(value, 4)) { setFormData({ ...formData, phdpassyear: value }); } }} isValid={formData.phdpassyear && !errors.phdpassyear} />
+                                {errors.phdpassyear && <p className="text-danger mb-0">{errors.phdpassyear}</p>}
+                              </Form.Group>
 
-                      {formData.selectpg === "MA" && (
-                        <>
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>In Department of</Form.Label>
+                                <Form.Control required type="text" placeholder="Department of ..." name="phdawdDept" isInvalid={!!errors.phdawdDept} value={formData.phdawdDept} maxLength={16} onChange={(e) => {
+                                  const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, phdawdDept: value }); }
+                                }} isValid={formData.phdawdDept && !errors.phdawdDept} />
+                                {errors.phdawdDept && <p className="text-danger mb-0">{errors.phdawdDept}</p>}
+                              </Form.Group>
+
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>Thesis Title</Form.Label>
+                                <Form.Control required type="text" placeholder="Thesis Title..." name="phdawdthesis" isInvalid={!!errors.phdawdthesis} value={formData.phdawdthesis} maxLength={30} onChange={handleChange} isValid={formData.phdawdthesis && !errors.phdawdthesis} />
+                                {errors.phdawdthesis && <p className="text-danger mb-0">{errors.phdawdthesis}</p>}
+                              </Form.Group>
+
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>University</Form.Label>
+                                <Form.Control required type="text" placeholder="University..." name="phdawduniversity" isInvalid={!!errors.phdawduniversity} value={formData.phdawduniversity} maxLength={24} onChange={(e) => {
+                                  const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, phdawduniversity: value }); }
+                                }} isValid={formData.phdawduniversity && !errors.phdawduniversity} />
+                                {errors.phdawduniversity && <p className="text-danger mb-0">{errors.phdawduniversity}</p>}
+                              </Form.Group>
+                            </>
+                          )}
+                          {formData.phdstatus === "Submitted" && (
+                            <>
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>In Department of</Form.Label>
+                                <Form.Control required type="text" placeholder="Department of ..." name="phdsubDept" isInvalid={!!errors.phdsubDept} value={formData.phdsubDept} maxLength={16} onChange={(e) => {
+                                  const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, phdsubDept: value }); }
+                                }} isValid={formData.phdsubDept && !errors.phdsubDept} />
+                                {errors.phdsubDept && <p className="text-danger mb-0">{errors.phdsubDept}</p>}
+                              </Form.Group>
+
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>Thesis Title</Form.Label>
+                                <Form.Control required type="text" placeholder="Thesis Title..." name="phdsubthesis" isInvalid={!!errors.phdsubthesis} value={formData.phdsubthesis} maxLength={30} onChange={handleChange} isValid={formData.phdsubthesis && !errors.phdsubthesis} />
+                                {errors.phdsubthesis && <p className="text-danger mb-0">{errors.phdsubthesis}</p>}
+                              </Form.Group>
+
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>University</Form.Label>
+                                <Form.Control required type="text" placeholder="University..." name="phdsubuniversity" isInvalid={!!errors.phdsubuniversity} value={formData.phdsubuniversity} maxLength={24} onChange={(e) => {
+                                  const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, phdsubuniversity: value }); }
+                                }} isValid={formData.phdsubuniversity && !errors.phdsubuniversity} />
+                                {errors.phdsubuniversity && <p className="text-danger mb-0">{errors.phdsubuniversity}</p>}
+                              </Form.Group>
+                            </>
+                          )}
+
+                          {formData.phdstatus === "registered" && (
+                            <>
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>In Department of</Form.Label>
+                                <Form.Control required type="text" placeholder="Department of ..." name="phdregDept" isInvalid={!!errors.phdregDept} value={formData.phdregDept} maxLength={16} onChange={(e) => {
+                                  const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, phdregDept: value }); }
+                                }} isValid={formData.phdregDept && !errors.phdregDept} />
+                                {errors.phdregDept && <p className="text-danger mb-0">{errors.phdregDept}</p>}
+                              </Form.Group>
+
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>Thesis Title</Form.Label>
+                                <Form.Control required type="text" placeholder="Thesis Title..." name="phdregthesis" isInvalid={!!errors.phdregthesis} value={formData.phdregthesis} maxLength={30} onChange={handleChange} isValid={formData.phdregthesis && !errors.phdregthesis} />
+                                {errors.phdregthesis && <p className="text-danger mb-0">{errors.phdregthesis}</p>}
+                              </Form.Group>
+
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>University</Form.Label>
+                                <Form.Control required type="text" placeholder="University..." name="phdreguniversity" isInvalid={!!errors.phdreguniversity} value={formData.phdreguniversity} maxLength={24} onChange={(e) => {
+                                  const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, phdreguniversity: value }); }
+                                }} isValid={formData.phdreguniversity && !errors.phdreguniversity} />
+                                {errors.phdreguniversity && <p className="text-danger mb-0">{errors.phdreguniversity}</p>}
+                              </Form.Group>
+                            </>
+                          )}
+
                           <Form.Group as={Col} sm="12" className="mb-3" >
-                            <Form.Label>Select Branch </Form.Label>
-                            <Form.Select name="branch_pg_ma" value={formData.branch_pg_ma} onChange={handleChange} isInvalid={!!errors.branch_pg_ma} isValid={formData.branch_pg_ma && !errors.branch_pg_ma}>
-                              <option value="">Select Branch</option>
-                              <option value="English">English</option>
+                            <Form.Label>PG Details </Form.Label>
+                            <Form.Select name="selectpg" value={formData.selectpg} onChange={handleChange} isInvalid={!!errors.selectpg} isValid={formData.selectpg && !errors.selectpg}>
+                              <option value="" disabled>Select</option>
+                              <option value="M.Tech">M.Tech</option>
+                              <option value="ME">ME</option>
+                              <option value="M.Pharma">M.Pharma</option>
+                              <option value="M.Sc">M.Sc</option>
+                              <option value="MA">MA</option>
+                              <option value="Other">Other (Specify)</option>
+                            </Form.Select>
+                            {errors.selectpg && <p className="text-danger mb-0">{errors.selectpg}</p>}
+                          </Form.Group>
+
+                          {formData.selectpg === "M.Sc" && (
+                            <>
+                              <Form.Group as={Col} sm="12" className="mb-3" >
+                                <Form.Label>Select Branch</Form.Label>
+                                <Form.Select name="branch_pg" value={formData.branch_pg || " "} onChange={handleChange} isInvalid={!!errors.branch_pg} isValid={formData.branch_pg && !errors.branch_pg}>
+                                  <option value="" disabled>Select Branch</option>
+                                  <option value="Mathematics">Mathematics</option>
+                                  <option value="Physics">Physics</option>
+                                  <option value="Chemistry">Chemistry</option>
+                                  <option value="Environmental Studies">Environmental Studies</option>
+                                </Form.Select>
+                                {errors.branch_pg && <p className="text-danger mb-0">{errors.branch_pg}</p>}
+                              </Form.Group>
+                            </>
+                          )}
+
+                          {formData.selectpg === "MA" && (
+                            <>
+                              <Form.Group as={Col} sm="12" className="mb-3" >
+                                <Form.Label>Select Branch </Form.Label>
+                                <Form.Select name="branch_pg_ma" value={formData.branch_pg_ma} onChange={handleChange} isInvalid={!!errors.branch_pg_ma} isValid={formData.branch_pg_ma && !errors.branch_pg_ma}>
+                                  <option value="" disabled>Select Branch</option>
+                                  <option value="English">English</option>
+                                  <option value="Other">Other</option>
+                                </Form.Select>
+                                {errors.branch_pg_ma && <p className="text-danger mb-0">{errors.branch_pg_ma}</p>}
+                              </Form.Group>
+                            </>
+                          )}
+                          {formData.selectpg === "Other" && (
+                            <>
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>Other PG Details Specify</Form.Label>
+                                <Form.Control required type="text" placeholder="Specify..." name="pg_other" isInvalid={!!errors.pg_other} value={formData.pg_other} maxLength={24} onChange={(e) => {
+                                  const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, pg_other: value }); }
+                                }} isValid={formData.pg_other && !errors.pg_other} />
+                                {errors.pg_other && <p className="text-danger mb-0">{errors.pg_other}</p>}
+                              </Form.Group>
+                            </>
+                          )}
+
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>Specialization</Form.Label>
+                            <Form.Control required type="text" placeholder="Specialization" name="specialization" isInvalid={!!errors.specialization} value={formData.specialization} maxLength={24} onChange={(e) => {
+                              const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, specialization: value }); }
+                            }} isValid={formData.specialization && !errors.specialization} />
+                            {errors.specialization && <p className="text-danger mb-0">{errors.specialization}</p>}
+                          </Form.Group>
+
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>Percentage / CGPA </Form.Label>
+                            <Form.Control required type="number" placeholder="Percentage / CGPA ..." name="CGPA" isInvalid={!!errors.CGPA} value={formData.CGPA} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, CGPA: value }); } }} isValid={formData.CGPA && !errors.CGPA} />
+                            {errors.CGPA && <p className="text-danger mb-0">{errors.CGPA}</p>}
+                          </Form.Group>
+
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>Year of Passing</Form.Label>
+                            <Form.Control required type="number" placeholder="Year of Passing ..." name="pgpass" isInvalid={!!errors.pgpass} value={formData.pgpass} onChange={(e) => { const value = e.target.value; if (isValidNumber(value, 4)) { setFormData({ ...formData, pgpass: value }); } }}  isValid={formData.pgpass && !errors.pgpass} />
+                            {errors.pgpass && <p className="text-danger mb-0">{errors.pgpass}</p>}
+                          </Form.Group>
+
+
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>Institution</Form.Label>
+                            <Form.Control required type="text" placeholder="Institution ..." name="institution_pg" isInvalid={!!errors.institution_pg} value={formData.institution_pg} onChange={handleChange} isValid={formData.institution_pg && !errors.institution_pg} />
+                            {errors.institution_pg && <p className="text-danger mb-0">{errors.institution_pg}</p>}
+                          </Form.Group>
+
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>University</Form.Label>
+                            <Form.Control required type="text" placeholder="University..." name="university_pg" isInvalid={!!errors.university_pg} value={formData.university_pg} onChange={(e) => {
+                              const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, university_pg: value }); }
+                            }} isValid={formData.university_pg && !errors.university_pg} />
+                            {errors.university_pg && <p className="text-danger mb-0">{errors.university_pg}</p>}
+                          </Form.Group>
+
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>GATE Rank / GPAT Rank</Form.Label>
+                            <Form.Control required type="number" placeholder="GATE Rank / GPAT Rank..." name="gaterank" isInvalid={!!errors.gaterank} value={formData.gaterank} onChange={(e) => { const value = e.target.value; if (isValidNumber(value, 5)) { setFormData({ ...formData, gaterank: value }); } }} isValid={formData.gaterank && !errors.gaterank} />
+                            {errors.gaterank && <p className="text-danger mb-0">{errors.gaterank}</p>}
+                          </Form.Group>
+
+                          <Form.Group as={Col} sm="12" className="mb-3" >
+                            <Form.Label>Select UG</Form.Label>
+                            <Form.Select name="selectug" value={formData.selectug} onChange={handleChange} isInvalid={!!errors.selectug} isValid={formData.selectug && !errors.selectug}>
+                              <option value="" disabled>Select</option>
+                              <option value="BA">BA</option>
+                              <option value="B.Com">B.Com</option>
+                              <option value="B.Tech">B.Tech</option>
+                              <option value="BE">BE</option>
+                              <option value="B.Pharm">B.Pharm</option>
+                              <option value="B.Sc">B.Sc</option>
                               <option value="Other">Other</option>
                             </Form.Select>
-                            {errors.branch_pg_ma && <p className="text-danger mb-0">{errors.branch_pg_ma}</p>}
+                            {errors.selectug && <p className="text-danger mb-0">{errors.selectug}</p>}
                           </Form.Group>
-                        </>
-                      )}
-                      {formData.selectpg === "Other" && (
-                        <>
+
+                          {formData.selectug === "Other" && (
+                            <>
+                              <Form.Group as={Col} sm="12" className="mb-3">
+                                <Form.Label>Other UG Details Specify</Form.Label>
+                                <Form.Control required type="text" placeholder="Specify..." name="ug_other" isInvalid={!!errors.ug_other} value={formData.ug_other} onChange={(e) => {
+                                  const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, ug_other: value }); }
+                                }} isValid={formData.ug_other && !errors.ug_other} />
+                                {errors.ug_other && <p className="text-danger mb-0">{errors.ug_other}</p>}
+                              </Form.Group>
+                            </>
+                          )}
+
                           <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>Other PG Details Specify</Form.Label>
-                            <Form.Control required type="text" placeholder="Specify..." name="pg_other" isInvalid={!!errors.pg_other} value={formData.pg_other} onChange={handleChange} isValid={formData.pg_other && !errors.pg_other} />
-                            {errors.pg_other && <p className="text-danger mb-0">{errors.pg_other}</p>}
+                            <Form.Label>Specialization</Form.Label>
+                            <Form.Control required type="text" placeholder="Specialization" name="ugspecialization" isInvalid={!!errors.ugspecialization} value={formData.ugspecialization} onChange={(e) => {
+                              const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, ugspecialization: value }); }
+                            }} isValid={formData.ugspecialization && !errors.ugspecialization} />
+                            {errors.ugspecialization && <p className="text-danger mb-0">{errors.ugspecialization}</p>}
                           </Form.Group>
-                        </>
-                      )}
 
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>Specialization</Form.Label>
-                        <Form.Control required type="text" placeholder="Specialization" name="specialization" isInvalid={!!errors.specialization} value={formData.specialization} onChange={handleChange} isValid={formData.specialization && !errors.specialization} />
-                        {errors.specialization && <p className="text-danger mb-0">{errors.specialization}</p>}
-                      </Form.Group>
-
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>Percentage / CGPA </Form.Label>
-                        <Form.Control required type="number" placeholder="Percentage / CGPA ..." name="CGPA" isInvalid={!!errors.CGPA} value={formData.CGPA} onChange={handleChange} isValid={formData.CGPA && !errors.CGPA} />
-                        {errors.CGPA && <p className="text-danger mb-0">{errors.CGPA}</p>}
-                      </Form.Group>
-
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>Year of Passing</Form.Label>
-                        <Form.Control required type="number" placeholder="Year of Passing ..." name="pgpass" isInvalid={!!errors.pgpass} value={formData.pgpass} onChange={handleChange} isValid={formData.pgpass && !errors.pgpass} />
-                        {errors.pgpass && <p className="text-danger mb-0">{errors.pgpass}</p>}
-                      </Form.Group>
-
-
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>Institution</Form.Label>
-                        <Form.Control required type="text" placeholder="Institution ..." name="institution_pg" isInvalid={!!errors.institution_pg} value={formData.institution_pg} onChange={handleChange} isValid={formData.institution_pg && !errors.institution_pg} />
-                        {errors.institution_pg && <p className="text-danger mb-0">{errors.institution_pg}</p>}
-                      </Form.Group>
-
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>University</Form.Label>
-                        <Form.Control required type="text" placeholder="University..." name="university_pg" isInvalid={!!errors.university_pg} value={formData.university_pg} onChange={handleChange} isValid={formData.university_pg && !errors.university_pg} />
-                        {errors.university_pg && <p className="text-danger mb-0">{errors.university_pg}</p>}
-                      </Form.Group>
-
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>GATE Rank / GPAT Rank</Form.Label>
-                        <Form.Control required type="number" placeholder="GATE Rank / GPAT Rank..." name="gaterank" isInvalid={!!errors.gaterank} value={formData.gaterank} onChange={handleChange} isValid={formData.gaterank && !errors.gaterank} />
-                        {errors.gaterank && <p className="text-danger mb-0">{errors.gaterank}</p>}
-                      </Form.Group>
-
-                      <Form.Group as={Col} sm="12" className="mb-3" >
-                        <Form.Label>Select UG</Form.Label>
-                        <Form.Select name="selectug" value={formData.selectug} onChange={handleChange} isInvalid={!!errors.selectug} isValid={formData.selectug && !errors.selectug}>
-                          <option value="">Select</option>
-                          <option value="BA">BA</option>
-                          <option value="B.Com">B.Com</option>
-                          <option value="B.Tech">B.Tech</option>
-                          <option value="BE">BE</option>
-                          <option value="B.Pharm">B.Pharm</option>
-                          <option value="B.Sc">B.Sc</option>
-                          <option value="Other">Other</option>
-                        </Form.Select>
-                        {errors.selectug && <p className="text-danger mb-0">{errors.selectug}</p>}
-                      </Form.Group>
-
-                      {formData.selectug === "Other" && (
-                        <>
                           <Form.Group as={Col} sm="12" className="mb-3">
-                            <Form.Label>Other UG Details Specify</Form.Label>
-                            <Form.Control required type="text" placeholder="Specify..." name="ug_other" isInvalid={!!errors.ug_other} value={formData.ug_other} onChange={handleChange} isValid={formData.ug_other && !errors.ug_other} />
-                            {errors.ug_other && <p className="text-danger mb-0">{errors.ug_other}</p>}
+                            <Form.Label>Percentage / CGPA </Form.Label>
+                            <Form.Control required type="number" placeholder="Percentage / CGPA ..." name="ugCGPA" isInvalid={!!errors.ugCGPA} maxLength={2} value={formData.ugCGPA} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, ugCGPA: value }); } }} isValid={formData.ugCGPA && !errors.ugCGPA} />
+                            {errors.ugCGPA && <p className="text-danger mb-0">{errors.ugCGPA}</p>}
                           </Form.Group>
-                        </>
-                      )}
 
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>Specialization</Form.Label>
-                        <Form.Control required type="text" placeholder="Specialization" name="ugspecialization" isInvalid={!!errors.ugspecialization} value={formData.ugspecialization} onChange={handleChange} isValid={formData.ugspecialization && !errors.ugspecialization} />
-                        {errors.ugspecialization && <p className="text-danger mb-0">{errors.ugspecialization}</p>}
-                      </Form.Group>
-
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>Percentage / CGPA </Form.Label>
-                        <Form.Control required type="number" placeholder="Percentage / CGPA ..." name="ugCGPA" isInvalid={!!errors.ugCGPA} value={formData.ugCGPA} onChange={handleChange} isValid={formData.ugCGPA && !errors.ugCGPA} />
-                        {errors.ugCGPA && <p className="text-danger mb-0">{errors.ugCGPA}</p>}
-                      </Form.Group>
-
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>Year of Passing</Form.Label>
-                        <Form.Control required type="number" placeholder="Year of Passing ..." name="ugpass" isInvalid={!!errors.ugpass} value={formData.ugpass} onChange={handleChange} isValid={formData.ugpass && !errors.ugpass} />
-                        {errors.ugpass && <p className="text-danger mb-0">{errors.ugpass}</p>}
-                      </Form.Group>
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>Year of Passing</Form.Label>
+                            <Form.Control required type="number" placeholder="Year of Passing ..." name="ugpass" isInvalid={!!errors.ugpass} value={formData.ugpass} onChange={(e) => { const value = e.target.value; if (isValidNumber(value, 4)) { setFormData({ ...formData, ugpass: value }); } }} isValid={formData.ugpass && !errors.ugpass} />
+                            {errors.ugpass && <p className="text-danger mb-0">{errors.ugpass}</p>}
+                          </Form.Group>
 
 
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>Institution</Form.Label>
-                        <Form.Control required type="text" placeholder="Institution ..." name="institution_ug" isInvalid={!!errors.institution_ug} value={formData.institution_ug} onChange={handleChange} isValid={formData.institution_ug && !errors.institution_ug} />
-                        {errors.institution_ug && <p className="text-danger mb-0">{errors.institution_ug}</p>}
-                      </Form.Group>
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>Institution</Form.Label>
+                            <Form.Control required type="text" placeholder="Institution ..." name="institution_ug" isInvalid={!!errors.institution_ug} value={formData.institution_ug} onChange={handleChange} isValid={formData.institution_ug && !errors.institution_ug} />
+                            {errors.institution_ug && <p className="text-danger mb-0">{errors.institution_ug}</p>}
+                          </Form.Group>
 
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>University</Form.Label>
-                        <Form.Control required type="text" placeholder="University..." name="university_ug" isInvalid={!!errors.university_ug} value={formData.university_ug} onChange={handleChange} isValid={formData.university_ug && !errors.university_ug} />
-                        {errors.university_ug && <p className="text-danger mb-0">{errors.university_ug}</p>}
-                      </Form.Group>
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>University</Form.Label>
+                            <Form.Control required type="text" placeholder="University..." name="university_ug" isInvalid={!!errors.university_ug} value={formData.university_ug} onChange={(e) => {
+                              const value = e.target.value; if (isLettersOnly(value)) { setFormData({ ...formData, university_ug: value }); }
+                            }} isValid={formData.university_ug && !errors.university_ug} />
+                            {errors.university_ug && <p className="text-danger mb-0">{errors.university_ug}</p>}
+                          </Form.Group>
 
-                      <Form.Group as={Col} sm="12" className="mb-3">
-                        <Form.Label>EAMCET / ECET Rank</Form.Label>
-                        <Form.Control required type="number" placeholder="GATE Rank / GPAT Rank..." name="eamcet_rank" isInvalid={!!errors.eamcet_rank} value={formData.eamcet_rank} onChange={handleChange} isValid={formData.eamcet_rank && !errors.eamcet_rank} />
-                        {errors.eamcet_rank && <p className="text-danger mb-0">{errors.eamcet_rank}</p>}
-                      </Form.Group>
+                          <Form.Group as={Col} sm="12" className="mb-3">
+                            <Form.Label>EAMCET / ECET Rank</Form.Label>
+                            <Form.Control required type="number" placeholder="EAMCET / ECET Rank..." name="eamcet_rank" isInvalid={!!errors.eamcet_rank} value={formData.eamcet_rank} onChange={(e) => { const value = e.target.value; if (isValidNumber(value, 6)) { setFormData({ ...formData, eamcet_rank: value }); } }} isValid={formData.eamcet_rank && !errors.eamcet_rank} />
+                            {errors.eamcet_rank && <p className="text-danger mb-0">{errors.eamcet_rank}</p>}
+                          </Form.Group>
 
-                    </Row>
-                  )}
+                        </Row>
+                    )}
 
                   {step === 4 && (
                     <>
                       <Row>
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>Industrial Experience</Form.Label>
-                          <Form.Control required type="number" placeholder="Industrial Experience..." name="industrial_exp" isInvalid={!!errors.industrial_exp} value={formData.industrial_exp} onChange={handleChange} isValid={formData.industrial_exp && !errors.industrial_exp} />
+                          <Form.Control required type="number" placeholder="Industrial Experience..." name="industrial_exp" isInvalid={!!errors.industrial_exp} value={formData.industrial_exp} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, industrial_exp: value }); } }} isValid={formData.industrial_exp && !errors.industrial_exp} />
                           {errors.industrial_exp && <p className="text-danger mb-0">{errors.industrial_exp}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>Academic Experience  </Form.Label>
-                          <Form.Control required type="number" placeholder="Academic Experience" name="academic_exp" isInvalid={!!errors.academic_exp} value={formData.academic_exp} onChange={handleChange} isValid={formData.academic_exp && !errors.academic_exp} />
+                          <Form.Control required type="number" placeholder="Academic Experience" name="academic_exp" isInvalid={!!errors.academic_exp} value={formData.academic_exp} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, academic_exp: value }); } }}  isValid={formData.academic_exp && !errors.academic_exp} />
                           {errors.academic_exp && <p className="text-danger mb-0">{errors.academic_exp}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>Total Experience </Form.Label>
-                          <Form.Control required readOnly type="number" placeholder="Total Experience" name="total_exp" isInvalid={!!errors.total_exp} value={totalExp} onChange={handleChange} isValid={formData.total_exp && !errors.total_exp} />
+                          <Form.Control required readOnly type="number" placeholder="Total Experience" name="total_exp" isInvalid={!!errors.total_exp} value={formData.total_exp} onChange={handleChange} isValid={formData.total_exp && !errors.total_exp} />
                           {errors.total_exp && <p className="text-danger mb-0">{errors.total_exp}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>Current Salary  </Form.Label>
-                          <Form.Control required type="number" placeholder="Current Salary" name="current_sal" isInvalid={!!errors.current_sal} value={formData.current_sal} onChange={handleChange} isValid={formData.current_sal && !errors.current_sal} />
+                          <Form.Control required type="number" placeholder="Current Salary" name="current_sal" isInvalid={!!errors.current_sal} value={formData.current_sal} onChange={(e) => { const value = e.target.value; if (isValidNumber(value, 5)) { setFormData({ ...formData, current_sal: value }); } }} isValid={formData.current_sal && !errors.current_sal} />
                           {errors.current_sal && <p className="text-danger mb-0">{errors.current_sal}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>Expected Salary</Form.Label>
-                          <Form.Control required type="number" placeholder="Expected Salary" name="expected_sal" isInvalid={!!errors.expected_sal} value={formData.expected_sal} onChange={handleChange} isValid={formData.expected_sal && !errors.expected_sal} />
+                          <Form.Control required type="number" placeholder="Expected Salary" name="expected_sal" isInvalid={!!errors.expected_sal} value={formData.expected_sal} onChange={(e) => { const value = e.target.value; if (isValidNumber(value, 5)) { setFormData({ ...formData, expected_sal: value }); } }} isValid={formData.expected_sal && !errors.expected_sal} />
                           {errors.expected_sal && <p className="text-danger mb-0">{errors.expected_sal}</p>}
                         </Form.Group>
 
@@ -1049,61 +1134,61 @@ const id = RandomId();
                       <Row>
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>No. of National Journal Papers Published</Form.Label>
-                          <Form.Control required type="number" placeholder="No. of National Journal Papers Published.." name="njournals_count" isInvalid={!!errors.njournals_count} value={formData.njournals_count} onChange={handleChange} isValid={formData.njournals_count && !errors.njournals_count} />
+                          <Form.Control required type="number" placeholder="No. of National Journal Papers Published.." name="njournals_count" isInvalid={!!errors.njournals_count} value={formData.njournals_count} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, njournals_count: value }); } }} isValid={formData.njournals_count && !errors.njournals_count} />
                           {errors.njournals_count && <p className="text-danger mb-0">{errors.njournals_count}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>No. of National Conference Papers Published</Form.Label>
-                          <Form.Control required type="number" placeholder="No. of National Conference Papers Published" name="nconference_count" isInvalid={!!errors.nconference_count} value={formData.nconference_count} onChange={handleChange} isValid={formData.nconference_count && !errors.nconference_count} />
+                          <Form.Control required type="number" placeholder="No. of National Conference Papers Published" name="nconference_count" isInvalid={!!errors.nconference_count} value={formData.nconference_count} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, nconference_count: value }); } }} isValid={formData.nconference_count && !errors.nconference_count} />
                           {errors.nconference_count && <p className="text-danger mb-0">{errors.nconference_count}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>Total No.of International Journal Papers Published </Form.Label>
-                          <Form.Control required type="number" placeholder="Total No.of International Journal Papers Published" name="injournals_count" isInvalid={!!errors.injournals_count} value={formData.injournals_count} onChange={handleChange} isValid={formData.injournals_count && !errors.injournals_count} />
+                          <Form.Control required type="number" placeholder="Total No.of International Journal Papers Published" name="injournals_count" isInvalid={!!errors.injournals_count} value={formData.injournals_count} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, injournals_count: value }); } }} isValid={formData.injournals_count && !errors.injournals_count} />
                           {errors.injournals_count && <p className="text-danger mb-0">{errors.injournals_count}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>No. of International Conference Papers Published</Form.Label>
-                          <Form.Control required type="number" placeholder="No. of International Conference Papers Published" name="inconference_count" isInvalid={!!errors.inconference_count} value={formData.inconference_count} onChange={handleChange} isValid={formData.inconference_count && !errors.inconference_count} />
+                          <Form.Control required type="number" placeholder="No. of International Conference Papers Published" name="inconference_count" isInvalid={!!errors.inconference_count} value={formData.inconference_count} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, inconference_count: value }); } }} isValid={formData.inconference_count && !errors.inconference_count} />
                           {errors.inconference_count && <p className="text-danger mb-0">{errors.inconference_count}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>No. of Funded Projects</Form.Label>
-                          <Form.Control required type="number" placeholder="No. of Funded Projects" name="funded_projects" isInvalid={!!errors.funded_projects} value={formData.funded_projects} onChange={handleChange} isValid={formData.funded_projects && !errors.funded_projects} />
+                          <Form.Control required type="number" placeholder="No. of Funded Projects" name="funded_projects" isInvalid={!!errors.funded_projects} value={formData.funded_projects} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, funded_projects: value }); } }} isValid={formData.funded_projects && !errors.funded_projects} />
                           {errors.funded_projects && <p className="text-danger mb-0">{errors.funded_projects}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>Total Amount Sanctioned</Form.Label>
-                          <Form.Control required type="number" placeholder="Total Amount Sanctioned" name="total_amount" isInvalid={!!errors.total_amount} value={formData.total_amount} onChange={handleChange} isValid={formData.total_amount && !errors.total_amount} />
+                          <Form.Control required type="number" placeholder="Total Amount Sanctioned" name="total_amount" isInvalid={!!errors.total_amount} value={formData.total_amount} onChange={(e) => { const value = e.target.value; if (isValidNumber(value, 6)) { setFormData({ ...formData, total_amount: value }); } }}  isValid={formData.total_amount && !errors.total_amount} />
                           {errors.total_amount && <p className="text-danger mb-0">{errors.total_amount}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>No. of books and book chapters published</Form.Label>
-                          <Form.Control required type="number" placeholder="No. of books and book chapters published" name="books_published" isInvalid={!!errors.books_published} value={formData.books_published} onChange={handleChange} isValid={formData.books_published && !errors.books_published} />
+                          <Form.Control required type="number" placeholder="No. of books and book chapters published" name="books_published" isInvalid={!!errors.books_published} value={formData.books_published} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, books_published: value }); } }} isValid={formData.books_published && !errors.books_published} />
                           {errors.books_published && <p className="text-danger mb-0">{errors.books_published}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>No. of Patents</Form.Label>
-                          <Form.Control required type="number" placeholder="No. of Patents" name="patents" isInvalid={!!errors.patents} value={formData.patents} onChange={handleChange} isValid={formData.patents && !errors.patents} />
+                          <Form.Control required type="number" placeholder="No. of Patents" name="patents" isInvalid={!!errors.patents} value={formData.patents} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, patents: value }); } }} isValid={formData.patents && !errors.patents} />
                           {errors.patents && <p className="text-danger mb-0">{errors.patents}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>No.of Scopus Journals</Form.Label>
-                          <Form.Control required type="number" placeholder="No.of Scopus Journals" name="scopus_journals" isInvalid={!!errors.scopus_journals} value={formData.scopus_journals} onChange={handleChange} isValid={formData.scopus_journals && !errors.scopus_journals} />
+                          <Form.Control required type="number" placeholder="No.of Scopus Journals" name="scopus_journals" isInvalid={!!errors.scopus_journals} value={formData.scopus_journals} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, scopus_journals: value }); } }}isValid={formData.scopus_journals && !errors.scopus_journals} />
                           {errors.scopus_journals && <p className="text-danger mb-0">{errors.scopus_journals}</p>}
                         </Form.Group>
 
                         <Form.Group as={Col} sm="12" className="mb-3">
                           <Form.Label>No.of SCI Journals</Form.Label>
-                          <Form.Control required type="number" placeholder="No.of SCI Journals" name="sci_journals" isInvalid={!!errors.sci_journals} value={formData.sci_journals} onChange={handleChange} isValid={formData.sci_journals && !errors.sci_journals} />
+                          <Form.Control required type="number" placeholder="No.of SCI Journals" name="sci_journals" isInvalid={!!errors.sci_journals} value={formData.sci_journals} onChange={(e) => { const value = e.target.value; if (isMaxDigits(value)) { setFormData({ ...formData, sci_journals: value }); } }} isValid={formData.sci_journals && !errors.sci_journals} />
                           {errors.sci_journals && <p className="text-danger mb-0">{errors.sci_journals}</p>}
                         </Form.Group>
 
@@ -1111,12 +1196,13 @@ const id = RandomId();
                           <Form.Label>Upload Resume</Form.Label>
                           <Form.Control required
                             type="file"
-                            name="upload_file"
-                            onChange={handleChange}
-                            isInvalid={!!errors.upload_file}
+                            name="attachment"
+                             onChange={(e) => {setFormData(prev => ({ ...prev,attachment: e.target.files[0] })); }}
+                            isInvalid={!!errors.attachment}
                             accept=".pdf,.docx" // restrict file chooser
                           />
-                           {errors.upload_file && <p className="text-danger mb-0">{errors.upload_file}</p>}
+                           {errors.attachment && <p className="text-danger mb-0">{errors.attachment}</p>}
+                          <p className="text-danger text-small">Note: Only PDF allowed.<span className="ms-2">File size must be less than 500kB</span></p>
                         </Form.Group>
                       </Row>
                     </>
@@ -1139,8 +1225,10 @@ const id = RandomId();
                ):(<>
                <div className="career__card--successWrap">
                <h2 className="success_msg mb-2">Your Details Uploaded Successfully</h2>
-                <p>Our Hr Team will Get Back to you.</p>
+                <p className="ref__msg">Our Hr Team will Get Back to you.</p>
+                <h4 className="ref__msg my-3">Your Application reference ID: {refid} </h4>
                 <h3 className="success_msg mt-5">Thanks</h3>
+                <Button type="submit" className='btn btn-md btn-primary'><a href="https://adityauniversity.in/"> <span className="me-2"><FontAwesomeIcon icon={faArrowLeft} /></span> Back to Home </a></Button>
                </div>
                </>)}
             </div>
